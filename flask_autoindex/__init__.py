@@ -72,7 +72,7 @@ class AutoIndex(object):
             raise TypeError("'base' should be Flask or Blueprint.")
 
     def __init__(self, base, browse_root=None, add_url_rules=True,
-                 template_context=None, silk_options=None,
+                 template_context=None, default_sort_by='name', default_order_by=1, silk_options=None,
                  show_hidden=False):
         """Initializes an autoindex instance."""
         self.base = base
@@ -93,11 +93,11 @@ class AutoIndex(object):
             @self.base.route('/')
             @self.base.route('/<path:path>')
             def autoindex(path='.'):
-                return self.render_autoindex(path)
+                return self.render_autoindex(path, sort_by=default_sort_by, order_by=default_order_by)
 
     def render_autoindex(self, path, browse_root=None, template=None,
                          template_context=None, endpoint='.autoindex',
-                         show_hidden=None, sort_by='name',
+                         show_hidden=None, sort_by='name', order_by=None,
                          mimetype=None):
         """Renders an autoindex with the given path.
 
@@ -110,6 +110,7 @@ class AutoIndex(object):
         :param endpoint: an endpoint which is a function.
         :param show_hidden: whether to show hidden files (starting with '.')
         :param sort_by: the property to sort the entrys by.
+        :param order_by: the property to order descending (-1) or ascending (1)
         :param mimetype: set static mime type for files (no auto detection).
         """
         if browse_root:
@@ -128,7 +129,10 @@ class AutoIndex(object):
 
         if os.path.isdir(abspath):
             sort_by = request.args.get('sort_by', sort_by)
-            order = {'asc': 1, 'desc': -1}[request.args.get('order', 'asc')]
+            if order_by:
+                order = order_by
+            else:
+                order = {'asc': 1, 'desc': -1}[request.args.get('order', 'asc')]
             curdir = Directory(path, rootdir)
             if show_hidden == None: show_hidden = self.show_hidden
             entries = curdir.explore(sort_by=sort_by, order=order,
